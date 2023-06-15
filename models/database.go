@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/joho/godotenv"
 	"os"
+	"path/filepath"
 )
 
 type dbParams struct {
@@ -15,7 +17,15 @@ type dbParams struct {
 	DbName     string
 }
 
-func ConnectDB() *gorm.DB {
+var DB *gorm.DB
+
+func ConnectDB() {
+	exec, _ := os.Executable()
+	configFilePath := filepath.Join(filepath.Dir(exec), ".env")
+
+	if err := godotenv.Load(configFilePath); err != nil {
+		fmt.Println(".env file not found")
+	}
 
 	var DbParams = dbParams{
 		DbName:     os.Getenv("DB_NAME"),
@@ -34,9 +44,12 @@ func ConnectDB() *gorm.DB {
 
 	db, err := gorm.Open("postgres", dbParamsString)
 	if err != nil {
-		panic("Не удалось подключиться к базе данных")
+		panic("Не удалось подключиться к базе данных: " + err.Error())
 	}
 	db.AutoMigrate(&Elm{})
+	if err != nil {
+		return
+	}
 
-	return db
+	DB = db
 }
